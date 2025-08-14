@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ENGINEER
+}
+
+model Customer {
+  ID               Int               @id @default(autoincrement())
+  name             String            @unique
+  createdAt        DateTime          @default(now())
+  customerServices CustomerService[]
+
+  @@map("customers")
+}
+
+model Admin {
+  ID            Int            @id @default(autoincrement())
+  role          Role
+  firstName     String         @map("first_name")
+  lastName      String         @map("last_name")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  email         String         @unique
+  password      String
+  services      Service[]
+  vpns          VPN[]
+  formTemplates FormTemplate[]
+
+  @@map("admins")
+}
+
+model Engineer {
+  ID            Int            @id @default(autoincrement())
+  role          Role
+  firstName     String         @map("first_name")
+  lastName      String         @map("last_name")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  email         String         @unique
+  password      String
+  formResponses FormResponse[]
+  vpns          VPN[]
+
+  @@map("engineers")
+}
+
+model Service {
+  ID             Int      @id @default(autoincrement())
+  name           String
+  adminID        Int      @map("admin_id")
+  formTemplateID Int      @map("form_template_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  admin            Admin             @relation(fields: [adminID], references: [ID])
+  formTemplate     FormTemplate      @relation(fields: [formTemplateID], references: [ID])
+  customerServices CustomerService[]
+
+  @@map("services")
+}
+
+model CustomerService {
+  ID         Int      @id @default(autoincrement())
+  customerID Int      @map("customer_id")
+  serviceID  Int      @map("service_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  customer      Customer       @relation(fields: [customerID], references: [ID])
+  service       Service        @relation(fields: [serviceID], references: [ID])
+  formResponses FormResponse[]
+
+  @@unique([customerID, serviceID])
+  @@map("customer_services")
+}
+
+model VPN {
+  ID         Int      @id @default(autoincrement())
+  name       String
+  peerIP     String   @map("peer_ip")
+  status     String
+  adminID    Int      @map("admin_id")
+  engineerID Int      @map("engineer_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  admin    Admin    @relation(fields: [adminID], references: [ID])
+  engineer Engineer @relation(fields: [engineerID], references: [ID])
+
+  @@map("vpns")
+}
+
+model FormTemplate {
+  ID          Int      @id @default(autoincrement())
+  name        String
+  createdByID Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy    Admin             @relation(fields: [createdByID], references: [ID])
+  sections     SectionTemplate[]
+  services     Service[]
+  formResponse FormResponse[]
+
+  @@map("form_templates")
+}
+
+model SectionTemplate {
+  ID     Int    @id @default(autoincrement())
+  name   String
+  formID Int    @map("form_id")
+
+  form      FormTemplate       @relation(fields: [formID], references: [ID])
+  questions QuestionTemplate[]
+
+  @@map("section_templates")
+}
+
+model QuestionTemplate {
+  ID        Int    @id @default(autoincrement())
+  text      String
+  sectionID Int    @map("section_id")
+
+  section SectionTemplate @relation(fields: [sectionID], references: [ID])
+
+  @@map("question_templates")
+}
+
+model FormResponse {
+  ID                Int      @id @default(autoincrement())
+  filledAt          DateTime @default(now()) @map("filled_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  engineerID        Int      @map("engineer_id")
+  customerServiceID Int      @map("customer_service_id")
+  formTemplateID    Int      @map("form_template_id")
+
+  engineer         Engineer          @relation(fields: [engineerID], references: [ID])
+  customerService  CustomerService   @relation(fields: [customerServiceID], references: [ID])
+  formTemplate     FormTemplate      @relation(fields: [formTemplateID], references: [ID])
+  sectionResponses SectionResponse[]
+
+  @@map("form_responses")
+}
+
+model SectionResponse {
+  ID             Int    @id @default(autoincrement())
+  sectionName    String @map("section_name")
+  formResponseID Int    @map("form_response_id")
+
+  formResponses     FormResponse       @relation(fields: [formResponseID], references: [ID])
+  questionResponses QuestionResponse[]
+
+  @@map("section_responses")
+}
+
+model QuestionResponse {
+  ID                Int    @id @default(autoincrement())
+  questionText      String @map("question_text")
+  answer            String
+  sectionResponseID Int    @map("section_response_id")
+
+  sectionResponse SectionResponse @relation(fields: [sectionResponseID], references: [ID])
+
+  @@map("question_responses")
+}

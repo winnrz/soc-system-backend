@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ENGINEER
+}
+
+enum VPNStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Customer {
+  id               Int               @id @default(autoincrement())
+  name             String            @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  customerServices CustomerService[]
+
+  @@map("customers")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  role         Role
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  email        String    @unique
+  password     String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  refreshToken String?   @map("refresh_token")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Admin-specific
+  services    Service[] @relation("adminServices")
+  forms       Form[]    @relation("adminForms")
+  vpnsAsAdmin VPN[]     @relation("vpnAdmin")
+
+  // Shared
+  updatedVPNs         VPN[]          @relation("vpnUpdatedBy")
+  filledFormResponses FormResponse[] @relation("UserFilledFormResponses")
+
+  @@map("users")
+}
+
+model Service {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  adminId   Int      @map("admin_id")
+  formId    Int      @map("form_template_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  admin            User              @relation("adminServices", fields: [adminId], references: [id])
+  form             Form              @relation(fields: [formId], references: [id])
+  customerServices CustomerService[]
+
+  @@map("services")
+}
+
+model DataSource {
+  id   Int  @id @default(autoincrement())
+  data Json @map("config")
+
+  customerService CustomerService?
+}
+
+model CustomerService {
+  id           Int      @id @default(autoincrement())
+  customerId   Int      @map("customer_id")
+  dataSourceId Int?     @unique @map("data_source_id")
+  serviceId    Int      @map("service_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  service       Service        @relation(fields: [serviceId], references: [id])
+  dataSource    DataSource?    @relation(fields: [dataSourceId], references: [id])
+  formResponses FormResponse[]
+
+  @@unique([customerId, serviceId])
+  @@map("customer_services")
+}
+
+model VPN {
+  id        Int       @id @default(autoincrement())
+  name      String
+  peerIp    String    @map("peer_ip")
+  status    VPNStatus @default(INACTIVE)
+  adminId   Int       @map("admin_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  updatedById Int?    @map("updated_by_id")
+  comments    String? @map("comments")
+  contacts    String? @map("contacts")
+
+  admin     User  @relation("vpnAdmin", fields: [adminId], references: [id])
+  updatedBy User? @relation("vpnUpdatedBy", fields: [updatedById], references: [id])
+
+  @@map("vpns")
+}
+
+model Form {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  config      Json     @map("config")
+
+  createdBy     User           @relation("adminForms", fields: [createdById], references: [id])
+  services      Service[]
+  formResponses FormResponse[]
+
+  @@map("form_templates")
+}
+
+model FormResponse {
+  id                Int      @id @default(autoincrement())
+  filledAt          DateTime @default(now()) @map("filled_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  filledById        Int?     @map("filled_by_id")
+  customerServiceId Int      @map("customer_service_id")
+  formId            Int      @map("form_template_id")
+  responseData      Json     @map("response_data")
+
+  filledBy        User?           @relation("UserFilledFormResponses", fields: [filledById], references: [id])
+  customerService CustomerService @relation(fields: [customerServiceId], references: [id])
+  form            Form            @relation(fields: [formId], references: [id])
+
+  @@map("form_responses")
+}
