@@ -11,11 +11,11 @@ export declare class AuthController {
     }>;
     login(user: User, res: Platform): Promise<{
         data: {
+            id: number;
             role: import(".prisma/client").$Enums.Role;
             firstName: string;
             lastName: string;
             email: string;
-            id: number;
             createdAt: Date;
             updatedAt: Date;
             refreshToken: string | null;

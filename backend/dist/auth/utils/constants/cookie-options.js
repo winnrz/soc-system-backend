@@ -4,16 +4,16 @@ exports.refreshTokenOptions = exports.accessTokenOptions = void 0;
 const isProd = process.env.NODE_ENV === 'production';
 exports.accessTokenOptions = {
     httpOnly: true,
-    secure: isProd,
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'none',
     maxAge: 15 * 60 * 1000,
-    path: '/'
+    path: '/',
 };
 exports.refreshTokenOptions = {
     httpOnly: true,
-    secure: isProd,
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'none',
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/'
+    path: '/',
 };
 //# sourceMappingURL=cookie-options.js.map
