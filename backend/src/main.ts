@@ -9,7 +9,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TimeoutInterceptor());
   app.use(cookieParser());
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://health-checks-r7e4.vercel.app'],
+    origin: ['http://localhost:3000'],
     credentials: true,
   });
   app.useGlobalPipes(
